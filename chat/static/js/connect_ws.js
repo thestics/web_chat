@@ -1,5 +1,10 @@
 // const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
+
+function getChatDiv() {
+    return document.getElementsByClassName('chat-log')[0];
+}
+
 const chatSocket = new WebSocket(
     'ws://'
     + window.location.host
@@ -8,7 +13,7 @@ const chatSocket = new WebSocket(
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
-    document.querySelector('#chat-log').value += (data.message + '\n');
+    getChatDiv().innerHTML += ('<p>' + data.message + '</p>');
 };
 
 chatSocket.onclose = function(e) {
@@ -29,4 +34,6 @@ document.querySelector('#chat-message-submit').onclick = function(e) {
         'message': message
     }));
     messageInputDom.value = '';
+    dst = getChatDiv();
+    dst.scrollTop = dst.scrollHeight;
 };

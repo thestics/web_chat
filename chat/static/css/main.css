@@ -1,0 +1,6 @@
+.chat-log {
+    overflow: auto;
+    width: 350px;
+    height: 200px;
+    border-width: 1px;
+}
