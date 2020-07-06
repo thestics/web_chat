@@ -1,8 +1,11 @@
-// const roomName = JSON.parse(document.getElementById('room-name').textContent);
-
 
 function getChatDiv() {
     return document.getElementsByClassName('chat-log')[0];
+}
+
+
+function wrapMessage(data) {
+    return data.message;
 }
 
 const chatSocket = new WebSocket(
@@ -13,7 +16,7 @@ const chatSocket = new WebSocket(
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
-    getChatDiv().innerHTML += ('<p>' + data.message + '</p>');
+    getChatDiv().innerHTML += wrapMessage(data);
 };
 
 chatSocket.onclose = function(e) {
