@@ -3,6 +3,7 @@
 <head>
     {% load static %}
     <meta charset="utf-8"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     {% block head %}
         <title>Chat</title>
@@ -11,7 +12,23 @@
 
 
 <body>
-    {% block body %} {% endblock %}
-    <script src="{% static 'js/connect_ws.js' %}"></script>
+    <div class="container">
+        {% if messages %}
+        <div class="container" style="padding: 10px">
+            {% for msg in messages %}
+            <div class="alert alert-{{ msg.level_tag }} alert-dismissible" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                {{ msg.message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block body %} {% endblock %}
+        <script src="{% static 'js/connect_ws.js' %}"></script>
+    </div>
+
 </body>
 </html>

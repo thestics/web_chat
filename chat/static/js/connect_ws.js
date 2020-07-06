@@ -5,7 +5,7 @@ function getChatDiv() {
 
 
 function wrapMessage(data) {
-    return data.message;
+    return `<div class="chat-message">${data.message}</div>`;
 }
 
 const chatSocket = new WebSocket(

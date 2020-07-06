@@ -1,8 +1,22 @@
+.chat {
+    display: flex;
+    margin-bottom: 1px;
+}
+
 .chat-log {
     overflow: auto;
     width: 800px;
-    height: 200px;
-    border-width: 1px;
+    height: 400px;
+    border: 1px solid black;
+    margin-right: 1px;
+}
+
+.chat-online {
+    overflow: auto;
+    width: 200px;
+    height: 400px;
+    border: 1px solid black;
+    margin-right: 4px;
 }
 
 .chat-message {
