@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    {% block head %}
+        <title>Chat</title>
+    {% endblock %}
+</head>
+
+{% load static %}
+
+<body>
+    {% block body %} {% endblock %}
+    <script src="{% static 'js/connect_ws.js' %}"></script>
+</body>
+</html>
