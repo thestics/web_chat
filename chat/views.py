@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib import messages
 
+from chat.models import ActiveUser
 from chat.forms import LoginForm
 
 
@@ -36,6 +37,7 @@ def register(request):
                 return redirect('chat:index')
             elif user is None and not username_taken:
                 user = User.objects.create_user(**credentials)
+                ActiveUser.objects.create(user=user)
                 login(request, user)
                 return redirect('chat:index')
             else:

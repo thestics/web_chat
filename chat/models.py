@@ -23,3 +23,4 @@ class ChatMessage(models.Model):
 
 class ActiveUser(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    active_connections = models.IntegerField(default=0)

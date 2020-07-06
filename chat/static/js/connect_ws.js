@@ -16,7 +16,10 @@ const chatSocket = new WebSocket(
 
 chatSocket.onmessage = function(e) {
     const data = JSON.parse(e.data);
-    getChatDiv().innerHTML += wrapMessage(data);
+    console.log(e.data)
+    if (data.type === 'chat.message') {
+        getChatDiv().innerHTML += wrapMessage(data);
+    }
 };
 
 chatSocket.onclose = function(e) {

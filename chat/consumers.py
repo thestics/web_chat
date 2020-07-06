@@ -12,35 +12,55 @@ from chat.utils import datetime_to_json
 
 class UserTrackerProxy(AsyncWebsocketConsumer):
 
-    async def connect(self):
-        await super().connect()
+    room_name = 'chat'
 
-        # avoid extra db calls
-        if not await self.is_user_connected():
-            await database_sync_to_async(ActiveUser.objects.create)(user=self.scope['user'])
+    async def connect(self):
+        await self.accept()
+        active_record = await self.get_user_active_record()
+        if active_record.active_connections == 0:
+            event_data = {
+                'type': 'online.connect',
+                'user': self.scope['user'].username
+            }
+            await self.channel_layer.group_send(self.room_name, event_data)
+            await self.online_connect(event_data)
+            # await self.channel_layer.send(self.channel_name, event_data)
+
+        active_record.active_connections += 1
+        await database_sync_to_async(active_record.save)()
 
     async def disconnect(self, code):
-        await super().disconnect(code)
+        active_record = await self.get_user_active_record()
+        active_record.active_connections -= 1
+        await database_sync_to_async(active_record.save)()
 
-        # avoid extra db calls
-        if await self.is_user_connected():
-            target = ActiveUser.objects.filter
-            active_user = await database_sync_to_async(target)(user=self.scope['user'])
-            await database_sync_to_async(active_user.delete)()
+        if active_record.active_connections == 0:
+            event_data = {
+                'type': 'online.disconnect',
+                'user': self.scope['user'].username
+            }
+            await self.channel_layer.group_send(self.room_name, event_data)
+            await self.online_disconnect(event_data)
+            # await self.channel_layer.send(self.channel_name, event_data)
 
-    async def is_user_connected(self):
+    async def get_user_active_record(self):
         user = self.scope['user']
-        r = await database_sync_to_async(ActiveUser.objects.filter)(user=user)
-        return await database_sync_to_async(r.exists)()
+        target = ActiveUser.objects.get
+        response = (await database_sync_to_async(target)(user=user))
+        return response
+
+    async def online_connect(self, event):
+        await self.send(json.dumps(event))
+
+    async def online_disconnect(self, event):
+        await self.send(json.dumps(event))
 
 
 class ChatConsumer(UserTrackerProxy):
 
-    room_name = 'chat'
-
     async def connect(self):
-        await super().connect()
         await self.channel_layer.group_add(self.room_name, self.channel_name)
+        await super().connect()
 
     async def disconnect(self, code):
         await super().disconnect(code)
@@ -55,6 +75,7 @@ class ChatConsumer(UserTrackerProxy):
         to_send = {'type': 'chat_message',
                    'message': message,
                    'sent': datetime_to_json(msg.sent)}
+
         await self.channel_layer.group_send(self.room_name, to_send)
 
     async def chat_message(self, event):
@@ -62,9 +83,11 @@ class ChatConsumer(UserTrackerProxy):
         user = self.scope['user']
         sent = event['sent']
 
-        await self.send(text_data=json.dumps({'message': msg,
-                                              'author': user.username,
-                                              'sent': sent}))
+        data = {'type': 'chat.message',
+                'message': msg,
+                'author': user.username,
+                'sent': sent}
+        await self.send(text_data=json.dumps(data))
 
     async def user_connected(self, event):
         ...
