@@ -19,3 +19,7 @@ class ChatMessage(models.Model):
 
     def __repr__(self):
         return str(self)
+
+
+class ActiveUser(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
