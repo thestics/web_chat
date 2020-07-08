@@ -1,11 +1,23 @@
+let onlineUsers = []
+
 
 function getChatDiv() {
-    return document.getElementsByClassName('chat-log')[0];
+    return document.getElementsByClassName('chat-log')[0]
+}
+
+
+function getOnlineDiv() {
+    return document.getElementsByClassName('chat-online')[0]
 }
 
 
 function wrapMessage(data) {
-    return `<div class="chat-message">${data.message}</div>`;
+    return `<div class="chat-message">${data.message}</div>`
+}
+
+
+function wrapOnlineUser(data) {
+    return `<div class="user-online">${data.username}</div>`
 }
 
 const chatSocket = new WebSocket(
@@ -15,31 +27,36 @@ const chatSocket = new WebSocket(
 );
 
 chatSocket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
+    const data = JSON.parse(e.data)
     console.log(e.data)
     if (data.type === 'chat.message') {
-        getChatDiv().innerHTML += wrapMessage(data);
+        getChatDiv().innerHTML += wrapMessage(data)
+    }
+
+    else if (data.type.startsWith("online.")) {
+
+        getOnlineDiv().innerHTML += wrapOnlineUser(data)
     }
 };
 
 chatSocket.onclose = function(e) {
-    console.error('Chat socket closed unexpectedly');
+    console.error('Chat socket closed unexpectedly')
 };
 
-document.querySelector('#chat-message-input').focus();
+document.querySelector('#chat-message-input').focus()
 document.querySelector('#chat-message-input').onkeyup = function(e) {
     if (e.keyCode === 13) {  // enter, return
-        document.querySelector('#chat-message-submit').click();
+        document.querySelector('#chat-message-submit').click()
     }
 };
 
 document.querySelector('#chat-message-submit').onclick = function(e) {
-    const messageInputDom = document.querySelector('#chat-message-input');
-    const message = messageInputDom.value;
+    const messageInputDom = document.querySelector('#chat-message-input')
+    const message = messageInputDom.value
     chatSocket.send(JSON.stringify({
         'message': message
     }));
-    messageInputDom.value = '';
-    dst = getChatDiv();
-    dst.scrollTop = dst.scrollHeight;
+    messageInputDom.value = ''
+    dst = getChatDiv()
+    dst.scrollTop = dst.scrollHeight
 };

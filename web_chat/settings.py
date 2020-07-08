@@ -89,6 +89,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'chat',
+        # 'USER': 'postgres',
+        # 'PASSWORD': '123123',
         'USER' : os.getenv('PGUNAME'),
         'PASSWORD' : os.getenv('PGPASSWORD'),
         'HOST' : '127.0.0.1',

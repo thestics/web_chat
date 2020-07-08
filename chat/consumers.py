@@ -6,7 +6,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async as db
 
-from chat.models import ChatMessage, ActiveUser
+from chat.selectors import active_user_get, chat_message_all, active_user_online_users
+from chat.services import active_user_connections_incr, active_user_connections_decr, chat_message_create
 from chat.utils import datetime_to_json
 
 
@@ -30,13 +31,11 @@ class UserTrackerProxy(AsyncWebsocketConsumer):
             # notify self
             await self.online_connect(event_data)
 
-        active_record.active_connections += 1
-        await db(active_record.save)()
+        await db(active_user_connections_incr)(active_user=active_record)
 
     async def disconnect(self, code):
         active_record = await self.get_user_active_record()
-        active_record.active_connections -= 1
-        await db(active_record.save)()
+        await db(active_user_connections_decr)(active_user=active_record)
 
         if active_record.active_connections == 0:
             event_data = {
@@ -51,10 +50,7 @@ class UserTrackerProxy(AsyncWebsocketConsumer):
 
     async def get_user_active_record(self):
         """Get record about number of active connections for given user"""
-        user = self.scope['user']
-        target = ActiveUser.objects.get
-        response = (await db(target)(user=user))
-        return response
+        return await db(active_user_get)(user=self.scope['user'])
 
     async def online_connect(self, event):
         await self.send(json.dumps(event))
@@ -72,11 +68,11 @@ class InitProxy(UserTrackerProxy):
         await self.send_current_online()
 
     async def get_chat_messages(self):
-        history = await db(list)(ChatMessage.objects.all())
+        history = await db(chat_message_all)()
         return history
 
     async def get_online_users(self):
-        users = await db(list)(ActiveUser.objects.filter(active_connections__gt=0))
+        users = await db(active_user_online_users)()
         return users
 
     async def send_chat_history(self):
@@ -110,7 +106,7 @@ class ChatConsumer(InitProxy):
         text_data_json = json.loads(text_data)
         user = self.scope['user']
         message = text_data_json['message']
-        msg = await db(ChatMessage.objects.create)(text=message, author=user)
+        msg = await db(chat_message_create)(text=message, author=user)
 
         to_send = {'type': 'chat_message',
                    'message': message,

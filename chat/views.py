@@ -2,11 +2,12 @@ import logging
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AnonymousUser
 from django.contrib import messages
 
-from chat.models import ActiveUser
 from chat.forms import LoginForm
+from chat.selectors import user_username_taken
+from chat.services import user_create
 
 
 log = logging.getLogger(__name__)
@@ -29,15 +30,17 @@ def register(request):
 
         if form.is_valid():
             credentials = form.cleaned_data
+            username = credentials['username']
+            password = credentials['password']
+
             user = authenticate(request, **credentials)
-            username_taken = User.objects.filter(username=credentials['username']).exists()
+            username_taken = user_username_taken(username=username)
 
             if user is not None:
                 login(request, user)
                 return redirect('chat:index')
             elif user is None and not username_taken:
-                user = User.objects.create_user(**credentials)
-                ActiveUser.objects.create(user=user)
+                user = user_create(username=username, password=password)
                 login(request, user)
                 return redirect('chat:index')
             else:
