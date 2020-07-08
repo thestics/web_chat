@@ -25,13 +25,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.user_track_manager.handle_connect()
         await self.channel_layer.group_add(self.room_name, self.channel_name)
 
+        # add channel to group of channels for given user
+        username = self.scope['user'].username
+        await self.channel_layer.group_add(username, self.channel_name)
+
     async def disconnect(self, code):
         await super().disconnect(code)
         await self.channel_layer.group_discard(self.room_name, self.channel_name)
+
+        # remove channel from group of channels for given user
+        username = self.scope['user'].username
+        await self.channel_layer.group_discard(username, self.channel_name)
+
         await self.user_track_manager.handle_disconnect(code)
 
     async def receive(self, text_data=None, bytes_data=None):
+        print(text_data)
         text_data_json = json.loads(text_data)
+
+        event_type = text_data_json.get('type', '')
+
+        if event_type == 'user.mention':
+            await self.handle_user_mention(text_data_json)
+            return
+
         user = self.scope['user']
         message = text_data_json['message']
         msg = await db(chat_message_create)(text=message, author=user)
@@ -58,3 +75,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def online_disconnect(self, event):
         await self.send(json.dumps(event))
+
+    async def handle_user_mention(self, event):
+        """Identify user channel by user name, send toast"""
+        event['by'] = self.scope['user'].username
+        target_username = event['name']
+
+        await self.channel_layer.group_send(target_username, event)
+
+    async def user_mention(self, event):
+        await self.send(text_data=json.dumps(event))

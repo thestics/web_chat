@@ -1,4 +1,5 @@
 let onlineUsers = new Map()
+const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat')
 
 
 function showOnlineUsers() {
@@ -7,7 +8,6 @@ function showOnlineUsers() {
         getOnlineDiv().innerHTML += html;
     }
 }
-
 
 function getChatDiv() {
     return document.getElementsByClassName('chat-log')[0]
@@ -56,14 +56,22 @@ function onlineDisconnect(event) {
     showOnlineUsers()
 }
 
+function userMention(event) {
+    let x = document.getElementById("snackbar")
+    x.className = "show"
+    x.innerHTML = `Mentioned by: ${event.by}`
+    setTimeout(function () {
+        x.className = x.className.replace("show", "")
+        x.innerHTML = ''
+    }, 3000);
+}
+
 
 function wrapOnlineUser(data) {
     return `<div class="user-online">${data.user}</div>`
 }
 
-const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat')
-
-chatSocket.onmessage = function(e) {
+chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data)
     console.log(e.data)
 
@@ -72,35 +80,49 @@ chatSocket.onmessage = function(e) {
     if (data.type === 'chat.message') {
         addMessage(data)
         scrollDown()
-    }
-
-    else if (msg_type[0] === 'init') {
-        if      (msg_type[1] === 'chat_history') initChatHistory(data)
+    } else if (msg_type[0] === 'init') {
+        if (msg_type[1] === 'chat_history') initChatHistory(data)
         else if (msg_type[1] === 'online_users') initOnlineUsers(data)
-    }
-
-    else if (msg_type[0] === 'online') {
-        if      (msg_type[1] === 'connect')     onlineConnect(data)
-        else if (msg_type[1] === 'disconnect')  onlineDisconnect(data)
+    } else if (msg_type[0] === 'online') {
+        if (msg_type[1] === 'connect') onlineConnect(data)
+        else if (msg_type[1] === 'disconnect') onlineDisconnect(data)
+    } else if (msg_type[0] === 'user') {
+        if (msg_type[1] === 'mention') userMention(data)
     }
 };
 
-chatSocket.onclose = function(e) {
+function processMessage(message) {
+    message = message.slice(0, -1)
+    let prepare = obj => JSON.stringify(obj)
+    let mentioned = message.matchAll(/(^|\s)@([\w]+)(\s|$)/g)
+
+    for (let match of mentioned) {
+        chatSocket.send(prepare({
+            "type": "user.mention",
+            "name": match[2]
+        }))
+    }
+
+    chatSocket.send(prepare({
+        "type": "chat.message",
+        "message": message
+    }))
+}
+
+chatSocket.onclose = function (e) {
     console.error('Chat socket closed unexpectedly')
 };
 
 document.querySelector('#chat-message-input').focus()
-document.querySelector('#chat-message-input').onkeyup = function(e) {
+document.querySelector('#chat-message-input').onkeyup = function (e) {
     if (e.keyCode === 13) {  // enter, return
         document.querySelector('#chat-message-submit').click()
     }
 };
 
-document.querySelector('#chat-message-submit').onclick = function(e) {
+document.querySelector('#chat-message-submit').onclick = function (e) {
     const messageInputDom = document.querySelector('#chat-message-input')
     const message = messageInputDom.value
-    chatSocket.send(JSON.stringify({
-        'message': message
-    }));
+    processMessage(message)
     messageInputDom.value = ''
 };
