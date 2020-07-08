@@ -6,8 +6,8 @@ from django.contrib.auth.models import AnonymousUser
 from django.contrib import messages
 
 from chat.forms import LoginForm
-from chat.selectors import user_username_taken
-from chat.services import user_create
+from chat.db_selectors import user_username_taken
+from chat.db_services import user_create
 
 
 log = logging.getLogger(__name__)

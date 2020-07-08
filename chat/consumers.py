@@ -6,8 +6,8 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async as db
 
-from chat.selectors import active_user_get, chat_message_all, active_user_online_users
-from chat.services import active_user_connections_incr, active_user_connections_decr, chat_message_create
+from chat.db_selectors import active_user_get, chat_message_all, active_user_online_users
+from chat.db_services import active_user_connections_incr, active_user_connections_decr, chat_message_create
 from chat.utils import datetime_to_json
 
 
