@@ -16,10 +16,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
     room_name = 'chat'
 
     async def connect(self):
-        await self.accept()
-        await InitManager(self).init()
-
         self.user_track_manager = UserTrackManager(self)
+
+        if not await self.handle_auth():
+            return
+
+        await InitManager(self).init()
         await self.user_track_manager.handle_connect()
         await self.channel_layer.group_add(self.room_name, self.channel_name)
 
@@ -40,6 +42,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
                    'sent': datetime_to_json(msg.sent)}
 
         await self.channel_layer.group_send(self.room_name, to_send)
+
+    async def handle_auth(self):
+        if not self.scope['user'].is_anonymous:
+            await self.accept()
+            return True
+        await self.close()
+        return False
 
     async def chat_message(self, event):
         await self.send(json.dumps(event))
