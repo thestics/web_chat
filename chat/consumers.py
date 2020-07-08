@@ -108,19 +108,12 @@ class ChatConsumer(InitProxy):
         message = text_data_json['message']
         msg = await db(chat_message_create)(text=message, author=user)
 
-        to_send = {'type': 'chat_message',
+        to_send = {'type': 'chat.message',
                    'message': message,
+                   'author': user.username,
                    'sent': datetime_to_json(msg.sent)}
 
         await self.channel_layer.group_send(self.room_name, to_send)
 
     async def chat_message(self, event):
-        msg = event['message']
-        user = self.scope['user']
-        sent = event['sent']
-
-        data = {'type': 'chat.message',
-                'message': msg,
-                'author': user.username,
-                'sent': sent}
-        await self.send(text_data=json.dumps(data))
+        await self.send(text_data=json.dumps(event))

@@ -23,4 +23,4 @@ def active_user_online_users() -> tp.Iterable[ActiveUser]:
 
 
 def chat_message_all() -> tp.Iterable[ChatMessage]:
-    return list(ChatMessage.objects.all())
+    return list(ChatMessage.objects.order_by("sent"))

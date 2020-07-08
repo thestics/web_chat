@@ -13,7 +13,7 @@ class ChatMessage(models.Model):
     def as_dict(self):
         user_name = self.author.username
         dict_date = datetime_to_dict(self.sent)
-        return {'text': self.text, 'sent': dict_date, 'user': user_name}
+        return {'message': self.text, 'sent': dict_date, 'author': user_name}
 
     def __str__(self):
         if len(self.text) > 16:
@@ -34,4 +34,4 @@ class ActiveUser(models.Model):
 
     def as_dict(self):
         username = self.user.username
-        return {'username': username, 'connections': self.active_connections}
+        return {'user': username, 'connections': self.active_connections}
