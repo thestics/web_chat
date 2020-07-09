@@ -12,7 +12,6 @@ from chat.managers import InitManager, UserTrackManager
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
-
     room_name = 'chat'
 
     async def connect(self):
@@ -31,7 +30,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, code):
         await super().disconnect(code)
-        await self.channel_layer.group_discard(self.room_name, self.channel_name)
+        await self.channel_layer.group_discard(self.room_name,
+                                               self.channel_name)
 
         # remove channel from group of channels for given user
         username = self.scope['user'].username
@@ -47,6 +47,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if event_type == 'user.mention':
             await self.handle_user_mention(text_data_json)
+            return
+
+        elif event_type == 'user.whoami':
+            await self.who_am_i()
             return
 
         user = self.scope['user']
@@ -82,6 +86,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         target_username = event['name']
 
         await self.channel_layer.group_send(target_username, event)
+
+    async def who_am_i(self):
+        await self.send(
+            text_data=json.dumps({'type': 'user.whoami',
+                                  'user': self.scope['user'].username})
+        )
 
     async def user_mention(self, event):
         await self.send(text_data=json.dumps(event))

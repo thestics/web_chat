@@ -1,6 +1,6 @@
 let onlineUsers = new Map()
 const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat')
-
+let curUser = null
 
 function showOnlineUsers() {
     getOnlineDiv().innerHTML = ''
@@ -26,12 +26,6 @@ function scrollDown() {
     let dst = getChatDiv()
     dst.scrollTop = dst.scrollHeight
 }
-
-
-function wrapMessage(data) {
-    return `<div class="chat-message"><b>${data.author}</b>: ${data.message}</div>`
-}
-
 
 function initChatHistory(event) {
     event.data.forEach(msg => addMessage(msg))
@@ -67,9 +61,31 @@ function userMention(event) {
 }
 
 
+function userWhoami(event) {
+    curUser = event['user']
+}
+
+
 function wrapOnlineUser(data) {
     return `<div class="user-online">${data.user}</div>`
 }
+
+
+function wrapMessage(data) {
+    let outerCls = ''
+    if (data.author === curUser)
+        outerCls = "chat-message-in"
+    else
+        outerCls = "chat-message-out"
+
+    return `<div class="${outerCls}">
+                <div class="chat-message">
+                    <b>${data.author}</b>: ${data.message}
+                </div>
+            </div>`
+}
+
+
 
 chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data)
@@ -81,13 +97,18 @@ chatSocket.onmessage = function (e) {
         addMessage(data)
         scrollDown()
     } else if (msg_type[0] === 'init') {
-        if (msg_type[1] === 'chat_history') initChatHistory(data)
+        if      (msg_type[1] === 'chat_history') initChatHistory(data)
         else if (msg_type[1] === 'online_users') initOnlineUsers(data)
     } else if (msg_type[0] === 'online') {
-        if (msg_type[1] === 'connect') onlineConnect(data)
-        else if (msg_type[1] === 'disconnect') onlineDisconnect(data)
+        if      (msg_type[1] === 'connect')      onlineConnect(data)
+        else if (msg_type[1] === 'disconnect')   onlineDisconnect(data)
     } else if (msg_type[0] === 'user') {
-        if (msg_type[1] === 'mention') userMention(data)
+        if      (msg_type[1] === 'mention')      userMention(data)
+        else if (msg_type[1] === 'whoami')       userWhoami(data)
+    }
+
+    if (curUser === null) {
+        chatSocket.send(JSON.stringify({"type": "user.whoami"}))
     }
 };
 
