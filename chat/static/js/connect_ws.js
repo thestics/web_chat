@@ -53,7 +53,7 @@ function onlineDisconnect(event) {
 function userMention(event) {
     let x = document.getElementById("snackbar")
     x.className = "show"
-    x.innerHTML = `Mentioned by: ${event.by}`
+    x.innerHTML = `<b>${event.by}</b>: ${event.message}`
     setTimeout(function () {
         x.className = x.className.replace("show", "")
         x.innerHTML = ''
@@ -84,7 +84,6 @@ function wrapMessage(data) {
                 </div>
             </div>`
 }
-
 
 
 chatSocket.onmessage = function (e) {
@@ -120,7 +119,8 @@ function processMessage(message) {
     for (let match of mentioned) {
         chatSocket.send(prepare({
             "type": "user.mention",
-            "name": match[2]
+            "name": match[2],
+            "message": message
         }))
     }
 

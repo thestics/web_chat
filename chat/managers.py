@@ -2,26 +2,53 @@
 # -*-encoding: utf-8-*-
 # Author: Danil Kovalenko
 
+import abc
 import json
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async as db
 
 from chat.db_selectors import active_user_get, chat_message_all, active_user_online_users
-from chat.db_services import active_user_connections_decr, active_user_connections_incr
+from chat.db_services import active_user_connections_decr, active_user_connections_incr, chat_message_create
+from chat.utils import datetime_to_json
+from chat.const import CHAT_ROOM_NAME
 
 
-class UserTrackManager:
+class ManagerError(Exception): pass
+
+
+class MessageSchemaError(ManagerError): pass
+
+
+class AbstractManager(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def __init__(self, consumer: AsyncWebsocketConsumer):
+        pass
+
+    @abc.abstractmethod
+    async def on_connect(self):
+        pass
+
+    @abc.abstractmethod
+    async def on_disconnect(self):
+        pass
+
+    @abc.abstractmethod
+    async def on_receive(self, text_data=None, bytes_data=None):
+        pass
+
+
+class UserTrackManager(AbstractManager):
     """User track manager, tracks online users"""
 
-    room_name = 'chat'
-
     def __init__(self, consumer: AsyncWebsocketConsumer):
+        super().__init__(consumer)
         self.scope = consumer.scope
         self.send = consumer.send
         self.group_send = consumer.channel_layer.group_send
 
-    async def handle_connect(self):
+    async def on_connect(self):
         active_record = await self.get_user_active_record()
 
         if active_record.active_connections == 0:
@@ -30,12 +57,12 @@ class UserTrackManager:
                 'user': self.scope['user'].username
             }
             # notify all
-            await self.group_send(self.room_name, event_data)
+            await self.group_send(CHAT_ROOM_NAME, event_data)
             await self.send(json.dumps(event_data))
 
         await db(active_user_connections_incr)(active_user=active_record)
 
-    async def handle_disconnect(self, code):
+    async def on_disconnect(self):
         active_record = await self.get_user_active_record()
         await db(active_user_connections_decr)(active_user=active_record)
 
@@ -45,15 +72,17 @@ class UserTrackManager:
                 'user': self.scope['user'].username
             }
             # notify all
-            await self.group_send(self.room_name, event_data)
+            await self.group_send(CHAT_ROOM_NAME, event_data)
             await self.send(json.dumps(event_data))
+
+    async def on_receive(self, text_data=None, bytes_data=None): pass
 
     async def get_user_active_record(self):
         """Get record about number of active connections for given user"""
         return await db(active_user_get)(user=self.scope['user'])
 
 
-class InitManager:
+class InitManager(AbstractManager):
     """
     Initialization manager.
 
@@ -61,11 +90,17 @@ class InitManager:
     """
 
     def __init__(self, consumer: AsyncWebsocketConsumer):
+        super().__init__(consumer)
         self.send = consumer.send
 
-    async def init(self):
+    async def on_connect(self):
         await self.send_chat_history()
         await self.send_current_online()
+
+    async def on_disconnect(self):
+        pass
+
+    async def on_receive(self, text_data=None, bytes_data=None): pass
 
     async def get_chat_messages(self):
             history = await db(chat_message_all)()
@@ -90,3 +125,63 @@ class InitManager:
             'data': [await db(u.as_dict)() for u in online_users]
         }
         await self.send(text_data=json.dumps(event_data))
+
+
+class ReceiveManager(AbstractManager):
+    """
+
+    Handles socket.receive events and dispatches them to corresponding handlers
+    """
+
+    def __init__(self, consumer: AsyncWebsocketConsumer):
+        super().__init__(consumer)
+        self.consumer = consumer
+
+    async def on_connect(self):
+        pass
+
+    async def on_disconnect(self):
+        pass
+
+    async def dispatch_receive_event(self, event):
+        """Derive method name and dispatch event to it"""
+        if 'type' not in event:
+            raise MessageSchemaError('Expected `type` field in event.')
+        handler_name = event['type'].replace('.', '_')
+        handler = getattr(self, handler_name)
+        await handler(event)
+
+    async def on_receive(self, text_data=None, bytes_data=None):
+        event = json.loads(text_data)
+        await self.dispatch_receive_event(event)
+
+    # dispatchable handlers
+
+    async def user_mention(self, event):
+        """Identify user channel by user name, send toast"""
+        event['by'] = self.consumer.scope['user'].username
+        target_username = event['name']
+
+        await self.consumer.channel_layer.group_send(target_username, event)
+
+    async def user_whoami(self, event):
+        """
+        Send to front current username to distinguish inward and outward
+        messages
+        """
+        username = self.consumer.scope['user'].username,
+        response = {'type': 'user.whoami', 'user': username}
+        await self.consumer.send(json.dumps(response))
+
+    async def chat_message(self, event):
+        """Handle chat message"""
+        user = self.consumer.scope['user']
+        message = event['message']
+        msg = await db(chat_message_create)(text=message, author=user)
+
+        to_send = {'type': 'chat.message',
+                   'message': message,
+                   'author': user.username,
+                   'sent': datetime_to_json(msg.sent)}
+
+        await self.consumer.channel_layer.group_send(CHAT_ROOM_NAME, to_send)
