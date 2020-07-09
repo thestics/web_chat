@@ -8,12 +8,21 @@ class ChatMessage(models.Model):
 
     text = models.CharField(max_length=8192)
     sent = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    service_msg = models.BooleanField(default=False)
 
     def as_dict(self):
-        user_name = self.author.username
+        author = self.author
+        if author is None:
+            user_name = None
+        else:
+            user_name = self.author.username
+
         dict_date = datetime_to_dict(self.sent)
-        return {'message': self.text, 'sent': dict_date, 'author': user_name}
+        return {'message':     self.text,
+                'sent':        dict_date,
+                'author':      user_name,
+                'service_msg': self.service_msg}
 
     def __str__(self):
         if len(self.text) > 16:
