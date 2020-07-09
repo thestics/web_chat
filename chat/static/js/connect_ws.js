@@ -17,6 +17,10 @@ function addMessage(data) {
     getChatDiv().innerHTML += wrapMessage(data)
 }
 
+function addServiceMessage(data) {
+    getChatDiv().innerHTML += wrapServiceMessage(data)
+}
+
 function getOnlineDiv() {
     return document.getElementsByClassName('chat-online')[0]
 }
@@ -28,11 +32,18 @@ function scrollDown() {
 }
 
 function initChatHistory(event) {
-    event.data.forEach(msg => addMessage(msg))
+    for (let i = 0; i < event.data.length; i++) {
+        let isService = event.data[i].service_msg
+        let msg = event.data[i]
+
+        if (isService) addServiceMessage(msg)
+        else           addMessage(msg)
+    }
     dst = getChatDiv()
     dst.scrollTop = dst.scrollHeight
 }
 
+/* incoming event handlers */
 
 function initOnlineUsers(event) {
     event.data.forEach(user => onlineUsers.set(user.user, wrapOnlineUser(user)))
@@ -65,9 +76,15 @@ function userWhoami(event) {
     curUser = event['user']
 }
 
+/* message wrappers */
 
 function wrapOnlineUser(data) {
     return `<div class="user-online">${data.user}</div>`
+}
+
+
+function wrapServiceMessage(data) {
+    return `<div class="chat-service-message">${data.message}</div>`
 }
 
 
@@ -92,9 +109,15 @@ chatSocket.onmessage = function (e) {
 
     let msg_type = data.type.split('.')
 
-    if (data.type === 'chat.message') {
-        addMessage(data)
-        scrollDown()
+    if (msg_type[0] === 'chat') {
+        if (msg_type[1] === 'message') {
+            addMessage(data)
+            scrollDown()
+        }
+        else if (msg_type[1] === 'servicemessage') {
+            addServiceMessage(data)
+            scrollDown()
+        }
     } else if (msg_type[0] === 'init') {
         if      (msg_type[1] === 'chat_history') initChatHistory(data)
         else if (msg_type[1] === 'online_users') initOnlineUsers(data)
@@ -109,12 +132,13 @@ chatSocket.onmessage = function (e) {
     if (curUser === null) {
         chatSocket.send(JSON.stringify({"type": "user.whoami"}))
     }
-};
+}
 
-function processMessage(message) {
-    message = message.slice(0, -1)
+function processMessage(data) {
     let prepare = obj => JSON.stringify(obj)
-    let mentioned = message.matchAll(/(^|\s)@([\w]+)(\s|$)/g)
+
+    message = data.message.slice(0, -1)
+    let mentioned = message.matchAll(/(^|\s)@([\w]+)/gm)
 
     for (let match of mentioned) {
         chatSocket.send(prepare({
@@ -144,6 +168,6 @@ document.querySelector('#chat-message-input').onkeyup = function (e) {
 document.querySelector('#chat-message-submit').onclick = function (e) {
     const messageInputDom = document.querySelector('#chat-message-input')
     const message = messageInputDom.value
-    processMessage(message)
+    processMessage({"type": "chat.message", "message": message})
     messageInputDom.value = ''
 };
