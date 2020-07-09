@@ -10,7 +10,7 @@ from chat.models import ActiveUser, ChatMessage
 
 
 def user_create(*, username: str, password: str) -> User:
-    user = User.objects.create_user(username, password)
+    user = User.objects.create_user(username=username, password=password)
     active_user_create(user=user)
     return user
 
@@ -29,5 +29,5 @@ def active_user_connections_decr(*, active_user: ActiveUser):
     active_user.save()
 
 
-def chat_message_create(*, text: str, author: User) -> ChatMessage:
-    return ChatMessage.objects.create(text=text, author=author)
+def chat_message_create(*, text: str, author: User, service_msg: bool = False) -> ChatMessage:
+    return ChatMessage.objects.create(text=text, author=author, service_msg=service_msg)
