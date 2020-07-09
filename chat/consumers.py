@@ -55,6 +55,7 @@ class ChatConsumerBase(AsyncWebsocketConsumer):
         await self.managers_notify_connect()
 
     async def receive(self, text_data=None, bytes_data=None):
+        print(text_data)
         await self.managers_notify_receive(text_data, bytes_data)
 
     async def disconnect(self, code):
@@ -68,16 +69,16 @@ class ChatConsumer(ChatConsumerBase):
     managers_cls = [InitManager, UserTrackManager, ReceiveManager]
 
     async def connect(self):
-        await super().connect()
         await self.channel_layer.group_add(self.room_name, self.channel_name)
+        await super().connect()
 
         # add channel to group of channels for given user
         username = self.scope['user'].username
         await self.channel_layer.group_add(username, self.channel_name)
 
     async def disconnect(self, code):
-        await super().disconnect(code)
         await self.channel_layer.group_discard(self.room_name,self.channel_name)
+        await super().disconnect(code)
 
         # remove channel from group of channels for given user
         username = self.scope['user'].username
@@ -89,6 +90,9 @@ class ChatConsumer(ChatConsumerBase):
     async def chat_message(self, event):
         await self.send(json.dumps(event))
 
+    async def chat_servicemessage(self, event):
+        await self.send(json.dumps(event))
+
     async def online_connect(self, event):
         await self.send(json.dumps(event))
 
@@ -96,4 +100,4 @@ class ChatConsumer(ChatConsumerBase):
         await self.send(json.dumps(event))
 
     async def user_mention(self, event):
-        await self.send(text_data=json.dumps(event))
+        await self.send(json.dumps(event))
