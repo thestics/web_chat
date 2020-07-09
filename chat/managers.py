@@ -59,6 +59,7 @@ class UserTrackManager(AbstractManager):
             # notify all
             await self.group_send(CHAT_ROOM_NAME, event_data)
             await self.send(json.dumps(event_data))
+            await self.send_service_msg_connect()
 
         await db(active_user_connections_incr)(active_user=active_record)
 
@@ -74,6 +75,7 @@ class UserTrackManager(AbstractManager):
             # notify all
             await self.group_send(CHAT_ROOM_NAME, event_data)
             await self.send(json.dumps(event_data))
+            await self.send_service_msg_disconnect()
 
     async def on_receive(self, text_data=None, bytes_data=None): pass
 
@@ -81,6 +83,21 @@ class UserTrackManager(AbstractManager):
         """Get record about number of active connections for given user"""
         return await db(active_user_get)(user=self.scope['user'])
 
+    async def send_service_msg_connect(self):
+        username = self.scope['user'].username
+        message = f'User {username} joined'
+        await db(chat_message_create)(text=message, author=None, service_msg=True)
+        await self.group_send(CHAT_ROOM_NAME,
+                              {'type': 'chat.servicemessage',
+                               'message': message})
+
+    async def send_service_msg_disconnect(self):
+        username = self.scope['user'].username
+        message = f'User {username} left'
+        await db(chat_message_create)(text=message, author=None, service_msg=True)
+        await self.group_send(CHAT_ROOM_NAME,
+                              {'type': 'chat.servicemessage',
+                               'message': message})
 
 class InitManager(AbstractManager):
     """
@@ -112,9 +129,11 @@ class InitManager(AbstractManager):
 
     async def send_chat_history(self):
         msg_history = await self.get_chat_messages()
+        data = [await db(m.as_dict)() for m in msg_history]
+
         event_data = {
             'type': 'init.chat_history',
-            'data': [await db(m.as_dict)() for m in msg_history]
+            'data': data
         }
         await self.send(text_data=json.dumps(event_data))
 
@@ -146,8 +165,8 @@ class ReceiveManager(AbstractManager):
     async def dispatch_receive_event(self, event):
         """Derive method name and dispatch event to it"""
         if 'type' not in event:
-            raise MessageSchemaError('Expected `type` field in event.')
-        handler_name = event['type'].replace('.', '_')
+            raise MessageSchemaError(f'Expected `type` field in event. Got: {event}')
+        handler_name = event['type'].lower().replace('.', '_')
         handler = getattr(self, handler_name)
         await handler(event)
 
@@ -172,6 +191,11 @@ class ReceiveManager(AbstractManager):
         username = self.consumer.scope['user'].username,
         response = {'type': 'user.whoami', 'user': username}
         await self.consumer.send(json.dumps(response))
+
+    async def chat_servicemessage(self, event):
+        """Handle chat service messages (joined channel, left channel)"""
+        message = event['message']
+        await self.consumer.channel_layer.group_send(CHAT_ROOM_NAME, event)
 
     async def chat_message(self, event):
         """Handle chat message"""
