@@ -55,7 +55,6 @@ class ChatConsumerBase(AsyncWebsocketConsumer):
         await self.managers_notify_connect()
 
     async def receive(self, text_data=None, bytes_data=None):
-        print(text_data)
         await self.managers_notify_receive(text_data, bytes_data)
 
     async def disconnect(self, code):

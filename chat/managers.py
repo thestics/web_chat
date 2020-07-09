@@ -108,9 +108,11 @@ class InitManager(AbstractManager):
 
     def __init__(self, consumer: AsyncWebsocketConsumer):
         super().__init__(consumer)
+        self.consumer = consumer
         self.send = consumer.send
 
     async def on_connect(self):
+        await self.send_whoami()
         await self.send_chat_history()
         await self.send_current_online()
 
@@ -126,6 +128,13 @@ class InitManager(AbstractManager):
     async def get_online_users(self):
         users = await db(active_user_online_users)()
         return users
+
+    async def send_whoami(self):
+        username = self.consumer.scope['user'].username,
+
+        # username is a tuple here
+        response = {'type': 'init.whoami', 'user': username[0]}
+        await self.send(json.dumps(response))
 
     async def send_chat_history(self):
         msg_history = await self.get_chat_messages()
@@ -183,18 +192,8 @@ class ReceiveManager(AbstractManager):
 
         await self.consumer.channel_layer.group_send(target_username, event)
 
-    async def user_whoami(self, event):
-        """
-        Send to front current username to distinguish inward and outward
-        messages
-        """
-        username = self.consumer.scope['user'].username,
-        response = {'type': 'user.whoami', 'user': username}
-        await self.consumer.send(json.dumps(response))
-
     async def chat_servicemessage(self, event):
         """Handle chat service messages (joined channel, left channel)"""
-        message = event['message']
         await self.consumer.channel_layer.group_send(CHAT_ROOM_NAME, event)
 
     async def chat_message(self, event):

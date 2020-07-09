@@ -46,6 +46,11 @@ def register(request):
             else:
                 msg = 'Username taken or wrong password'
                 messages.warning(request, message=msg)
+        else:
+            for attr, err_list in form.errors.items():
+                for err in err_list:
+                    err_msg = f'{attr}: {err}'
+                    messages.warning(request, message=err_msg)
 
     context = {'form': LoginForm}
     return render(request, 'registration/login.html', context)

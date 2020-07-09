@@ -109,7 +109,10 @@ chatSocket.onmessage = function (e) {
 
     let msg_type = data.type.split('.')
 
-    if (msg_type[0] === 'chat') {
+    if (msg_type[0] === 'user') {
+        if (msg_type[1] === 'mention') userMention(data)
+    }
+    else if (msg_type[0] === 'chat') {
         if (msg_type[1] === 'message') {
             addMessage(data)
             scrollDown()
@@ -119,18 +122,12 @@ chatSocket.onmessage = function (e) {
             scrollDown()
         }
     } else if (msg_type[0] === 'init') {
-        if      (msg_type[1] === 'chat_history') initChatHistory(data)
+        if (msg_type[1] === 'whoami')       userWhoami(data)
+        else if (msg_type[1] === 'chat_history') initChatHistory(data)
         else if (msg_type[1] === 'online_users') initOnlineUsers(data)
     } else if (msg_type[0] === 'online') {
         if      (msg_type[1] === 'connect')      onlineConnect(data)
         else if (msg_type[1] === 'disconnect')   onlineDisconnect(data)
-    } else if (msg_type[0] === 'user') {
-        if      (msg_type[1] === 'mention')      userMention(data)
-        else if (msg_type[1] === 'whoami')       userWhoami(data)
-    }
-
-    if (curUser === null) {
-        chatSocket.send(JSON.stringify({"type": "user.whoami"}))
     }
 }
 
@@ -138,7 +135,7 @@ function processMessage(data) {
     let prepare = obj => JSON.stringify(obj)
 
     message = data.message.slice(0, -1)
-    let mentioned = message.matchAll(/(^|\s)@([\w]+)/gm)
+    let mentioned = message.matchAll(/(^|\s)@([\w.\-]+)/gm)
 
     for (let match of mentioned) {
         chatSocket.send(prepare({
