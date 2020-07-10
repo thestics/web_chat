@@ -25,7 +25,7 @@ SECRET_KEY = 'cykl+p)n-lpc*sy_+eb57m1dt0sq!vl*l2j1fs0q71iabi^_zw'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -76,7 +76,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('localhost', 6379)]
+            'hosts': [('redis', 6379)]
         }
     }
 }
@@ -89,11 +89,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'chat',
-        # 'USER': 'postgres',
-        # 'PASSWORD': '123123',
-        'USER' : os.getenv('PGUNAME'),
-        'PASSWORD' : os.getenv('PGPASSWORD'),
-        'HOST' : '127.0.0.1',
+        'USER' :     'postgres',
+        'PASSWORD' : 'postgres',
+        'HOST' : 'db',
         'PORT' : '5432',
     }
 }

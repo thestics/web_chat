@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  db:
+      image: postgres
+      ports:
+      - "5432:5432"
+#      volumes:
+#      - "./init.sql:/docker-entrypoint-initdb.d/init.sql"
+      restart: always
+      environment:
+          POSTGRES_USER:        postgres
+          POSTGRES_PASSWORD:    postgres
+          POSTGRES_DB:          chat
+      networks:
+          - django
+  redis:
+      image: "redis"
+      ports:
+      - "6379:6379"
+      networks:
+          - django
+  web:
+      build: .
+      command: python3 manage.py runserver 0.0.0.0:8000
+      image: 'web_chat'
+      volumes:
+          - .:/code
+      ports:
+          - "8000:8000"
+      depends_on:
+          - db
+          - redis
+      networks:
+          - django
+  migration:
+      command: python3 manage.py migrate --noinput
+      volumes:
+          - .:/code
+      image: 'web_chat'
+      depends_on:
+          - db
+      networks:
+          - django
+
+networks:
+  django:
+      driver: bridge
