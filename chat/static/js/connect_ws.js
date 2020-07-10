@@ -79,7 +79,10 @@ function userWhoami(event) {
 /* message wrappers */
 
 function wrapOnlineUser(data) {
-    return `<div class="user-online">${data.user}</div>`
+    return `<div class="user-online">
+                ${data.user}
+                <hr style="margin: 0">
+            </div>`
 }
 
 

@@ -9,8 +9,6 @@ services:
       image: postgres
       ports:
       - "5432:5432"
-#      volumes:
-#      - "./init.sql:/docker-entrypoint-initdb.d/init.sql"
       restart: always
       environment:
           POSTGRES_USER:        postgres
@@ -26,7 +24,7 @@ services:
           - django
   web:
       build: .
-      command: daphne -b 0.0.0.0 -p 8000 web_chat.asgi:application
+      command: python3 manage.py runserver 0.0.0.0:8000
       image: 'web_chat'
       links:
           - "db:db"

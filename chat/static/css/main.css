@@ -24,6 +24,12 @@
     margin-right: 4px;
 }
 
+.user-online {
+    margin: 2px;
+    padding: 2px;
+    text-align: center;
+}
+
 .chat-message {
     overflow: hidden;
 }
