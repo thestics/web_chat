@@ -10,7 +10,7 @@ from channels.db import database_sync_to_async as db
 
 from chat.db_selectors import active_user_get, chat_message_all, active_user_online_users
 from chat.db_services import active_user_connections_decr, active_user_connections_incr, chat_message_create
-from chat.utils import datetime_to_json
+from chat.utils import datetime_to_dict
 from chat.const import CHAT_ROOM_NAME
 
 
@@ -205,6 +205,6 @@ class ReceiveManager(AbstractManager):
         to_send = {'type': 'chat.message',
                    'message': message,
                    'author': user.username,
-                   'sent': datetime_to_json(msg.sent)}
+                   'sent': datetime_to_dict(msg.sent)}
 
         await self.consumer.channel_layer.group_send(CHAT_ROOM_NAME, to_send)

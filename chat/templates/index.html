@@ -4,15 +4,15 @@
 {% block body %}
     <a href="?logout">Logout...</a><br>
     <div class="chat">
-        <div class="chat-log">
+        <div class="chat-log img-thumbnail">
 
         </div>
-        <div class="chat-online">
+        <div class="chat-online img-thumbnail">
 
         </div>
     </div>
-    <textarea id="chat-message-input" rows="3" cols="60"></textarea><br/>
-    <input id="chat-message-submit" type="button" value="Send">
+    <textarea class="chat-input form-control" id="chat-message-input"></textarea><br/>
+    <input class="btn btn-outline-primary" id="chat-message-submit" type="button" value="Send" style="width: 150px">
     <script src="{% static 'js/connect_ws.js' %}"></script>
     <div id="snackbar">"{MENTION}"</div>
 {% endblock %}

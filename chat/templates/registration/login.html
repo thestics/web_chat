@@ -3,11 +3,15 @@
 {% block title %}Login{% endblock %}
 
 {% block body %}
-    <header>Login</header>
+    <header style="margin-top: 20px; margin-bottom: 20px">
+        <h2>Login</h2>
+    </header>
     <form action="." method="POST">
-        {% csrf_token %}
-        {{ form }}
-        <button>Login</button>
+        <div class="form-group">
+            {% csrf_token %}
+            {{ form }}
+            <button class="btn btn-outline-primary" style="margin-top: 10px">Login</button>
+        </div>
     </form>
 
 {% endblock %}

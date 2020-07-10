@@ -6,7 +6,7 @@ import re
 
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
-from django.forms import Form, CharField, PasswordInput
+from django.forms import Form, CharField, PasswordInput, TextInput
 
 
 def username_validator(value):
@@ -20,5 +20,11 @@ def username_validator(value):
 
 
 class LoginForm(Form):
-    username = CharField(label='username', max_length=128, validators=[username_validator])
-    password = CharField(label='password', max_length=128, widget=PasswordInput())
+    username = CharField(label='Username',
+                         max_length=128,
+                         validators=[username_validator],
+                         widget=TextInput(attrs={'class': 'form-control w-25'}))
+
+    password = CharField(label='Password',
+                         max_length=128,
+                         widget=PasswordInput(attrs={'class': 'form-control w-25'}))

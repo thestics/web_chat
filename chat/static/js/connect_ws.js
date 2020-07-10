@@ -37,7 +37,7 @@ function initChatHistory(event) {
         let msg = event.data[i]
 
         if (isService) addServiceMessage(msg)
-        else           addMessage(msg)
+        else addMessage(msg)
     }
     dst = getChatDiv()
     dst.scrollTop = dst.scrollHeight
@@ -84,20 +84,29 @@ function wrapOnlineUser(data) {
 
 
 function wrapServiceMessage(data) {
-    return `<div class="chat-service-message">${data.message}</div>`
+    return `<div class="chat-service-message"> 
+                <p>${data.message}</p>
+            </div>`
 }
 
 
 function wrapMessage(data) {
     let outerCls = ''
     if (data.author === curUser)
-        outerCls = "chat-message-in"
-    else
         outerCls = "chat-message-out"
+    else
+        outerCls = "chat-message-in"
 
-    return `<div class="${outerCls}">
+    return `<div class="${outerCls} w-75">
                 <div class="chat-message">
-                    <b>${data.author}</b>: ${data.message}
+                    ${data.message}
+                </div>
+                
+                <div class="d-flex mt-2 pb5-0">
+                    <span class="text-secondary">${data.author}</span>
+                    <span class="ml-auto text-secondary">
+                        ${data.sent.hour.padStart(2, '0')}:${data.sent.minute.padStart(2, '0')}
+                    </span>
                 </div>
             </div>`
 }
@@ -111,23 +120,21 @@ chatSocket.onmessage = function (e) {
 
     if (msg_type[0] === 'user') {
         if (msg_type[1] === 'mention') userMention(data)
-    }
-    else if (msg_type[0] === 'chat') {
+    } else if (msg_type[0] === 'chat') {
         if (msg_type[1] === 'message') {
             addMessage(data)
             scrollDown()
-        }
-        else if (msg_type[1] === 'servicemessage') {
+        } else if (msg_type[1] === 'servicemessage') {
             addServiceMessage(data)
             scrollDown()
         }
     } else if (msg_type[0] === 'init') {
-        if (msg_type[1] === 'whoami')       userWhoami(data)
+        if (msg_type[1] === 'whoami') userWhoami(data)
         else if (msg_type[1] === 'chat_history') initChatHistory(data)
         else if (msg_type[1] === 'online_users') initOnlineUsers(data)
     } else if (msg_type[0] === 'online') {
-        if      (msg_type[1] === 'connect')      onlineConnect(data)
-        else if (msg_type[1] === 'disconnect')   onlineDisconnect(data)
+        if (msg_type[1] === 'connect') onlineConnect(data)
+        else if (msg_type[1] === 'disconnect') onlineDisconnect(data)
     }
 }
 
