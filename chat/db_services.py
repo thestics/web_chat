@@ -2,7 +2,10 @@
 # -*-encoding: utf-8-*-
 # Author: Danil Kovalenko
 
-import typing as tp
+# Services of database
+#
+# All business logic, dedicated to database write implemented here
+
 
 from django.contrib.auth.models import User
 
@@ -29,5 +32,11 @@ def active_user_connections_decr(*, active_user: ActiveUser):
     active_user.save()
 
 
-def chat_message_create(*, text: str, author: User, service_msg: bool = False) -> ChatMessage:
-    return ChatMessage.objects.create(text=text, author=author, service_msg=service_msg)
+def chat_message_create(*,
+                        text: str,
+                        author: User,
+                        service_msg: bool = False) -> ChatMessage:
+
+    return ChatMessage.objects.create(text=text,
+                                      author=author,
+                                      service_msg=service_msg)

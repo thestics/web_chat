@@ -20,11 +20,21 @@ def username_validator(value):
 
 
 class LoginForm(Form):
-    username = CharField(label='Username',
-                         max_length=128,
-                         validators=[username_validator],
-                         widget=TextInput(attrs={'class': 'form-control w-25'}))
+    username = CharField(
+        label='Username',
+        max_length=128,
+        validators=[username_validator],
+        widget=TextInput(attrs={
+            'class': 'form-control w-25'
+            }
+        )
+    )
 
-    password = CharField(label='Password',
-                         max_length=128,
-                         widget=PasswordInput(attrs={'class': 'form-control w-25'}))
+    password = CharField(
+        label='Password',
+        max_length=128,
+        widget=PasswordInput(attrs={
+            'class': 'form-control w-25'
+            }
+        )
+    )

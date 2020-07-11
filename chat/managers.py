@@ -8,8 +8,10 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async as db
 
-from chat.db_selectors import active_user_get, chat_message_all, active_user_online_users
-from chat.db_services import active_user_connections_decr, active_user_connections_incr, chat_message_create
+from chat.db_selectors import active_user_get, chat_message_all, \
+    active_user_online_users
+from chat.db_services import active_user_connections_decr, \
+    active_user_connections_incr, chat_message_create
 from chat.utils import datetime_to_dict
 from chat.const import CHAT_ROOM_NAME
 
@@ -21,6 +23,7 @@ class MessageSchemaError(ManagerError): pass
 
 
 class AbstractManager(metaclass=abc.ABCMeta):
+    """Manager base class. Implements interface required for all managers"""
 
     @abc.abstractmethod
     def __init__(self, consumer: AsyncWebsocketConsumer):
@@ -86,7 +89,8 @@ class UserTrackManager(AbstractManager):
     async def send_service_msg_connect(self):
         username = self.scope['user'].username
         message = f'User {username} joined'
-        await db(chat_message_create)(text=message, author=None, service_msg=True)
+        attrs = {'text': message, 'author': None, 'service_msg': True}
+        await db(chat_message_create)(**attrs)
         await self.group_send(CHAT_ROOM_NAME,
                               {'type': 'chat.servicemessage',
                                'message': message})
@@ -94,7 +98,8 @@ class UserTrackManager(AbstractManager):
     async def send_service_msg_disconnect(self):
         username = self.scope['user'].username
         message = f'User {username} left'
-        await db(chat_message_create)(text=message, author=None, service_msg=True)
+        attrs = {'text': message, 'author': None, 'service_msg': True}
+        await db(chat_message_create)(**attrs)
         await self.group_send(CHAT_ROOM_NAME,
                               {'type': 'chat.servicemessage',
                                'message': message})
@@ -174,7 +179,9 @@ class ReceiveManager(AbstractManager):
     async def dispatch_receive_event(self, event):
         """Derive method name and dispatch event to it"""
         if 'type' not in event:
-            raise MessageSchemaError(f'Expected `type` field in event. Got: {event}')
+            err_msg = f'Expected `type` field in event. Got: {event}'
+            raise MessageSchemaError(err_msg)
+
         handler_name = event['type'].lower().replace('.', '_')
         handler = getattr(self, handler_name)
         await handler(event)

@@ -2,6 +2,10 @@
 # -*-encoding: utf-8-*-
 # Author: Danil Kovalenko
 
+# Selectors from databases
+#
+# All business logic, dedicated to database read is implemented here
+
 import typing as tp
 
 from django.contrib.auth.models import User

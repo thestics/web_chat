@@ -6,7 +6,8 @@ import json
 import typing as tp
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from chat.managers import AbstractManager, ReceiveManager, InitManager, UserTrackManager
+from chat.managers import AbstractManager, ReceiveManager, InitManager, \
+    UserTrackManager
 
 
 class ChatConsumerBase(AsyncWebsocketConsumer):
