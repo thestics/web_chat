@@ -24,7 +24,8 @@ services:
           - django
   web:
       build: .
-      command: python3 manage.py runserver 0.0.0.0:8000
+#      command: python3 manage.py runserver 0.0.0.0:8000
+      command: daphne -b 0.0.0.0 -p 8000 web_chat.asgi:application
       image: 'web_chat'
       links:
           - "db:db"
@@ -38,7 +39,7 @@ services:
       networks:
           - django
   migration:
-      command: python3 manage.py migrate --noinput
+      command: bash -c "python3 manage.py migrate --noinput && python3 manage.py collectstatic --noinput"
       volumes:
           - .:/code
       image: 'web_chat'
